@@ -1,0 +1,9 @@
+{
+	"paths": {
+		"base": "test/",
+		"api": "api/",
+		"header": "header/",
+		"impl": "impl"
+	},
+	"eol": "CRLF"
+}
