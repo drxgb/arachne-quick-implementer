@@ -3,7 +3,7 @@
 		"base": "test/",
 		"api": "api/",
 		"header": "header/",
-		"impl": "impl"
+		"impl": "impl/"
 	},
 	"eol": "CRLF"
 }
