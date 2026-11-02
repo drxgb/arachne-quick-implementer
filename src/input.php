@@ -15,7 +15,7 @@ function checkClassFiles(string $name, array &$settings) : bool
 
 	$answer = '';
 
-	echo "API file:\t\t{$inputs['api']}" . PHP_EOL;
+	echo "API file:\t\t\t{$inputs['api']}" . PHP_EOL;
 	echo "Object Header file:\t\t{$inputs['obj']['header']}" . PHP_EOL;
 	echo "Object Implementation file:\t{$inputs['obj']['impl']}" . PHP_EOL;
 	echo "Lib Header file:\t\t{$inputs['lib']['header']}" . PHP_EOL;
