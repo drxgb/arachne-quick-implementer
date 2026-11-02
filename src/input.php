@@ -40,7 +40,7 @@ function makeInputPaths(array &$settings, string $name) : void
 		'lib'	=> $lib,
 	] = $settings['paths'];
 
-	$base = realPath($base) . DIRECTORY_SEPARATOR;
+	$base = realpath($base) . DIRECTORY_SEPARATOR;
 	$settings['inputs']['api'] = $base . $api . $name . EXT_H;
 
 	foreach ([ 'obj' => $obj, 'lib' => $lib ] as $g => $group)
