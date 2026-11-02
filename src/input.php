@@ -5,13 +5,13 @@ const EXT_CPP = '.cpp';
 
 function checkClassFiles(string $name, array &$settings) : bool
 {
-	makeOutputPaths($settings, $name);
+	makeInputPaths($settings, $name);
 
 	[
 		'api'			=> $api,
 		'header'		=> $header,
 		'impl'			=> $impl,
-	] = $settings['outputs'];
+	] = $settings['inputs'];
 
 	if (! is_file($api))
 	{
@@ -45,7 +45,7 @@ function checkClassFiles(string $name, array &$settings) : bool
 }
 
 
-function makeOutputPaths(array &$settings, string $name) : void
+function makeInputPaths(array &$settings, string $name) : void
 {
 	[
 		'base'			=> $base,
@@ -54,7 +54,7 @@ function makeOutputPaths(array &$settings, string $name) : void
 		'impl'			=> $impl,
 	] = $settings['paths'];
 
-	$settings['outputs'] = [
+	$settings['inputs'] = [
 		'api'		=> $base . $api . $name . EXT_H,
 		'header'	=> $base . $header . $name . EXT_H,
 		'impl' 		=> $base . $impl . $name . EXT_CPP,

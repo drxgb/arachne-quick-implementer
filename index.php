@@ -1,32 +1,29 @@
 <?php
-
 include_once 'src/settings.php';
 include_once 'src/implementer.php';
 include_once 'src/input.php';
 
-
-// ====================================================================
-
-// Dados
 $settings = [];
+$data = (object) [];
 $className = '';
 $checked = false;
 
-
-// ====================================================================
-
-//* Ler configurações iniciais
+// Ler configurações iniciais
 loadSettings(__DIR__, $settings);
 
-//* Inserir nome da classe
+// Inserir nome da classe
 while (! $checked)
 {
 	echo 'Input class name: ';
-
 	$className = trim(fgets(STDIN));
 	$checked = checkClassFiles($className, $settings);
 }
 
-//* Aplicar implementação
+// Preparar dados
+$data->settings = $settings;
+$data->className = $className;
 
+// Aplicar implementação
+prepareInputFiles($data);
+run($data);
 ?>
