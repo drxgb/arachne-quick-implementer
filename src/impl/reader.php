@@ -4,7 +4,6 @@ include 'constants.php';
 
 function readApi(object &$params, string $content) : void
 {
-	$params->api = (object) [];
 	$params->methods = [];
 
 	$accesses = [
@@ -40,10 +39,25 @@ function readApi(object &$params, string $content) : void
 				}
 
 				[ 'category' => $c ] = $pos;
-				$params->methods[$a][$c][] = [
-					'signature'	=> trim(substr($content, $begin, $end - $begin)),
-					'property'	=> findDocParameter($content, 'property', $begin),
-				];
+				$ck = strtolower($c);
+
+				$method = [];
+				$method['signature'] = trim(substr($content, $begin, $end - $begin));
+				$method['property'] = findDocParameter($content, 'property', $begin);
+				$method['param'] = findDocParameter($content, 'param', $begin);
+
+				if ($ck === 'getters')
+				{
+					$method['getter'] = true;
+					$method['inline'] = $method['property'] !== null;
+				}
+				else if ($ck === 'setters')
+				{
+					$method['setter'] = true;
+					$method['inline'] = $method['property'] !== null;
+				}
+
+				$params->methods[$a][$c][] = $method;
 			}
 		}
 	}
@@ -101,18 +115,7 @@ function findDocParameter(string $content, string $key, int $offset) : ?string
 
 	if ($offset > 0)
 	{
-		$begin = $offset;
-
-		while ($begin > 0)
-		{
-			--$begin;
-			$ch = $content[$begin];
-
-			if (in_array($ch, [ ':', K_EOL, K_OPEN_BRACKET ]))
-			{
-				break;
-			}
-		}
+		$begin = findPos($content, [ ':', K_EOL, K_OPEN_BRACKET ], $offset, -1);
 
 		if ($begin > 0)
 		{
@@ -125,7 +128,7 @@ function findDocParameter(string $content, string $key, int $offset) : ?string
 				if ($begin !== false)
 				{
 					$begin += strlen("@$key ");
-					$end = strpos($doc, "\n", $begin);
+					$end = findPos($doc, [ ' ', "\t", "\r", "\n" ], $begin);
 					$param = trim(substr($doc, $begin, $end - $begin), " \t\r\n");
 				}
 			}
@@ -133,6 +136,32 @@ function findDocParameter(string $content, string $key, int $offset) : ?string
 	}
 
 	return $param;
+}
+
+
+function findPos(string $content, array|string $query, int $offset, int $step = 1) : int
+{
+	$pos = $offset;
+	$len = strlen($content);
+
+	if (is_string($query))
+	{
+		$query = [ $query ];
+	}
+
+	while ($pos > 0 && $pos < $len)
+	{
+		$ch = $content[$pos];
+
+		if (in_array($ch, $query))
+		{
+			break;
+		}
+
+		$pos += $step;
+	}
+
+	return $pos;
 }
 
 ?>

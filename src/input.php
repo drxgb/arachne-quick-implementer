@@ -6,34 +6,20 @@ const EXT_CPP = '.cpp';
 function checkClassFiles(string $name, array &$settings) : bool
 {
 	makeInputPaths($settings, $name);
+	$inputs = $settings['inputs'];
 
-	[
-		'api'			=> $api,
-		'header'		=> $header,
-		'impl'			=> $impl,
-	] = $settings['inputs'];
-
-	if (! is_file($api))
+	if (! checkFiles($inputs))
 	{
-		logInvalidFile($api);
-		return false;
-	}
-	if (! is_file($header))
-	{
-		logInvalidFile($header);
-		return false;
-	}
-	if (! is_file($impl))
-	{
-		logInvalidFile($impl);
 		return false;
 	}
 
 	$answer = '';
 
-	echo "API file:\t\t$api" . PHP_EOL;
-	echo "Header file:\t\t$header" . PHP_EOL;
-	echo "Implementation file:\t$impl" . PHP_EOL . PHP_EOL;
+	echo "API file:\t\t{$inputs['api']}" . PHP_EOL;
+	echo "Object Header file:\t\t{$inputs['obj']['header']}" . PHP_EOL;
+	echo "Object Implementation file:\t{$inputs['obj']['impl']}" . PHP_EOL;
+	echo "Lib Header file:\t\t{$inputs['lib']['header']}" . PHP_EOL;
+	echo "Lib Implementation file:\t{$inputs['lib']['impl']}" . PHP_EOL . PHP_EOL;
 
 	while (! in_array($answer, [ 'y', 'n' ]))
 	{
@@ -48,23 +34,49 @@ function checkClassFiles(string $name, array &$settings) : bool
 function makeInputPaths(array &$settings, string $name) : void
 {
 	[
-		'base'			=> $base,
-		'api'			=> $api,
-		'header'		=> $header,
-		'impl'			=> $impl,
+		'base'	=> $base,
+		'api'	=> $api,
+		'obj'	=> $obj,
+		'lib'	=> $lib,
 	] = $settings['paths'];
 
-	$settings['inputs'] = [
-		'api'		=> $base . $api . $name . EXT_H,
-		'header'	=> $base . $header . $name . EXT_H,
-		'impl' 		=> $base . $impl . $name . EXT_CPP,
-	];
+	$settings['inputs']['api'] = $base . $api . $name . EXT_H;
+
+	foreach ([ 'obj' => $obj, 'lib' => $lib ] as $g => $group)
+	{
+		$filename = (isset($group['prefix']) ? $group['prefix'] : null) . $name;
+		$settings['inputs'][$g] = [
+			'header'	=> $base . $group['header'] . $name . EXT_H,
+			'impl' 		=> $base . $group['impl'] . $filename . EXT_CPP,
+		];
+	}
 }
 
 
 function logInvalidFile(string $path) : void
 {
 	echo "The file $path does not exist" . PHP_EOL;
+}
+
+
+function checkFiles(array $paths) : bool
+{
+	[
+		'api'	=> $api,
+		'obj'	=> $obj,
+		'lib'	=> $lib,
+	] = $paths;
+
+	foreach ([ $api, ...$obj, ...$lib ] as $path)
+	{
+		if (! is_file($path))
+		{
+			logInvalidFile($path);
+			return false;
+		}
+	}
+
+	return true;
 }
 
 ?>

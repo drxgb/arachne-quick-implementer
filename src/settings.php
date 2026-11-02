@@ -16,6 +16,10 @@ function loadSettings(string $path, array &$settings) : void
 	{
 		$settings['eol'] = convertEOL($settings['eol']);
 	}
+	if (isset($settings['paths']))
+	{
+		$settings['paths']['base'] = $path . DIRECTORY_SEPARATOR . $settings['paths']['base'];
+	}
 }
 
 

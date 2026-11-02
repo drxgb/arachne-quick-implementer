@@ -16,7 +16,11 @@ while (! $checked)
 {
 	echo 'Input class name: ';
 	$className = trim(fgets(STDIN));
-	$checked = checkClassFiles($className, $settings);
+
+	if (! empty($className))
+	{
+		$checked = checkClassFiles($className, $settings);
+	}
 }
 
 // Preparar dados
@@ -25,5 +29,6 @@ $data->className = $className;
 
 // Aplicar implementação
 prepareInputFiles($data);
-run($data);
+read($data);
+write($data);
 ?>

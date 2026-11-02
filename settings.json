@@ -2,8 +2,26 @@
 	"paths": {
 		"base": "test/",
 		"api": "api/",
-		"header": "header/",
-		"impl": "impl/"
+		"obj": {
+			"header": "obj/header/",
+			"impl": "obj/impl/"
+		},
+		"lib": {
+			"header": "lib/header/",
+			"impl": "lib/impl/",
+			"prefix": "L_"
+		}
+	},
+	"replacements": {
+		"native": "Funções membro"
+	},
+	"bodies": {
+		"getter": "return getProxied()->%s;",
+		"setter": "getProxied()->%s = %s;"
+	},
+	"lib": {
+		"mark": "// Funções exportadas da biblioteca",
+		"signature": "Weaver::Value* %s(const Weaver::Args& args, Weaver::Memory&);"
 	},
 	"eol": "CRLF"
 }
