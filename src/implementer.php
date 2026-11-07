@@ -46,11 +46,10 @@ function write(object $data) : void
 	$lib = $data->input->lib;
 	$wv = $data->input->wv;
 
-	// TODO: Pular métodos já implementados
-	//writeObjHeader($files['obj']['header'], $params, $settings, $obj->header);
-	//writeLibHeader($files['lib']['header'], $params, $settings, $lib->header);
-	//writeObjImpl($files['obj']['impl'], $className, $params, $settings, $obj->impl);
-	//writeLibImpl($files['lib']['impl'], $className, $params, $settings, $lib->impl);
+	writeObjHeader($files['obj']['header'], $params, $settings, $obj->header);
+	writeLibHeader($files['lib']['header'], $params, $settings, $lib->header);
+	writeObjImpl($files['obj']['impl'], $className, $params, $settings, $obj->impl);
+	writeLibImpl($files['lib']['impl'], $className, $params, $settings, $lib->impl);
 	writeWvImpl($files['wv'], $params, $settings, $wv);
 	// TODO: Escrever no construtor de classes Weaver
 }

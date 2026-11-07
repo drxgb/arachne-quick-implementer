@@ -12,28 +12,33 @@ function writeObjHeader(string $filename, object $params, array $settings, strin
 		if ($begin !== false && count($categories) > 0)
 		{
 			$begin += strlen($access) + 1;
-			$replace .= $eol;
 
 			foreach ($categories as $category => $methods)
 			{
+				$methods = array_filter(
+					$methods,
+					fn (array $m) : bool => ! str_contains($content, $m['signature'])
+				);
+
+				if (count($methods))
+				{
+					$replace .= $eol;
+				}
+				else
+				{
+					continue;
+				}
+
 				$members = [
 					'inline'	=> [],
 					'prototype'	=> [],
 				];
 
-				if (! empty($category))
-				{
-					$replace .= "\t\t" . K_COMMENT . ' ';
-					$replace .= replaceCategoryName($category, $settings['replacements']);
-					$replace .= $eol;
-				}
+				makeCategoryComment($content, $replace, $category, $settings, $eol);
 
 				foreach ($methods as $method)
 				{
-					[
-						'signature'	=> $signature,
-						'property'	=> $property,
-					] = $method;
+					[ 'signature' => $signature ] = $method;
 
 					if (! empty($method['inline']))
 					{
@@ -57,7 +62,7 @@ function writeObjHeader(string $filename, object $params, array $settings, strin
 				{
 					[
 						'signature'	=> $signature,
-						'property'	=> $property,
+						'doc'		=> $doc,
 					] = $method;
 
 					$replace .= "\t\t" . K_INLINE . ' ' . $signature . $eol;
@@ -66,14 +71,14 @@ function writeObjHeader(string $filename, object $params, array $settings, strin
 					if (isset($method['getter']))
 					{
 						$replace .= "\t\t\t";
-						$replace .= sprintf($settings['bodies']['getter'], $property);
+						$replace .= sprintf($settings['bodies']['getter'], $doc['property']);
 						$replace .= $eol;
 					}
 					else if (isset($method['setter']))
 					{
-						$param = $method['param'] ?? $property;
+						$param = $method['param'] ?? $doc['property'];
 						$replace .= "\t\t\t";
-						$replace .= sprintf($settings['bodies']['setter'], $property, $param);
+						$replace .= sprintf($settings['bodies']['setter'], $doc['property'], $param);
 						$replace .= $eol;
 					}
 					else
@@ -102,17 +107,25 @@ function writeLibHeader(string $filename, object $params, array $settings, strin
 	{
 		foreach ($categories as $category => $methods)
 		{
-			if (! empty($category))
+			$methods = array_filter(
+				$methods,
+				fn (array $m) : bool => ! str_contains($content, $m['name'])
+			);
+
+			if (count($methods))
 			{
-				$replace .= $eol . $eol;
-				$replace .= "\t\t" . K_COMMENT . ' ';
-				$replace .= replaceCategoryName($category, $settings['replacements']);
+				$replace .= $eol;
 			}
+			else
+			{
+				continue;
+			}
+
+			makeCategoryComment($content, $replace, $category, $settings, $eol);
 
 			foreach ($methods as $method)
 			{
-				[ 'signature' => $signature ] = $method;
-				$name = getMethodName($signature);
+				[ 'name' => $name ] = $method;
 
 				if ($name !== null)
 				{
@@ -154,7 +167,12 @@ function writeObjImpl(string $filename, string $className, object $params, array
 
 				if (empty($method['inline']))
 				{
-					$replace .= makeImplMethodSignature($className, $signature, $eol);
+					$implSignature = makeImplMethodSignature($className, $signature, $eol);
+
+					if (! str_contains($content, $implSignature))
+					{
+						$replace .= $implSignature;
+					}
 				}
 			}
 		}
@@ -182,19 +200,35 @@ function writeLibImpl(string $filename, string $className, object $params, array
 
 		foreach ($categories as $category => $methods)
 		{
-			$replace .= $eol . $line;
-			$replace .= K_COMMENT . " \t\t";
-			$replace .= replaceCategoryName($category, $settings['replacements']) . $eol;
-			$replace .= $line;
+			$comment = $eol . $line;
+			$comment .= K_COMMENT . " \t\t";
+			$comment .= replaceCategoryName($category, $settings['replacements']) . $eol;
+			$comment .= $line;
+
+			$count = 0;
+
+			if (! str_contains($content, $comment))
+			{
+				$replace .= $comment;
+			}
 
 			foreach ($methods as $method)
 			{
-				[ 'signature' => $signature ] = $method;
-				$name = sprintf($settings['lib']['signature'], getMethodName($signature));
-				$replace .= makeImplMethodSignature($className, $name, $eol);
+				[ 'name' => $name ] = $method;
+				$name = sprintf($settings['lib']['signature'], $name);
+				$implSignature = makeImplMethodSignature($className, $name, $eol);
+
+				if (! str_contains($content, $implSignature))
+				{
+					$replace .= $implSignature;
+					$count++;
+				}
 			}
 
-			$replace .= $eol;
+			if ($count > 0)
+			{
+				$replace .= $eol;
+			}
 		}
 
 		$content .= $replace;
@@ -364,6 +398,27 @@ function getMethodName(string $signature) : ?string
 	}
 
 	return null;
+}
+
+
+function makeCategoryComment(
+	string $content,
+	string &$replace,
+	string $category,
+	array $settings,
+	string $eol
+) : void
+{
+	if (! empty($category))
+	{
+		$comment = "\t\t" . K_COMMENT . ' ';
+		$comment .= replaceCategoryName($category, $settings['replacements']);
+
+		if (! str_contains($content, $comment))
+		{
+			$replace .= $comment . $eol;
+		}
+	}
 }
 
 
