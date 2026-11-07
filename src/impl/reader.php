@@ -43,18 +43,20 @@ function readApi(object &$params, string $content) : void
 
 				$method = [];
 				$method['signature'] = trim(substr($content, $begin, $end - $begin));
-				$method['property'] = findDocParameter($content, 'property', $begin);
-				$method['param'] = findDocParameter($content, 'param', $begin);
+				$method['doc']['property'] = findDocParameter($content, 'property', $begin);
+				$method['doc']['param'] = findDocParameter($content, 'param', $begin);
+
+				makeMethodStructure($method);
 
 				if ($ck === 'getters')
 				{
 					$method['getter'] = true;
-					$method['inline'] = $method['property'] !== null;
+					$method['inline'] = $method['doc']['property'] !== null;
 				}
 				else if ($ck === 'setters')
 				{
 					$method['setter'] = true;
-					$method['inline'] = $method['property'] !== null;
+					$method['inline'] = $method['doc']['property'] !== null;
 				}
 
 				$params->methods[$a][$c][] = $method;
@@ -136,6 +138,43 @@ function findDocParameter(string $content, string $key, int $offset) : ?string
 	}
 
 	return $param;
+}
+
+
+function makeMethodStructure(array &$method) : void
+{
+	if (isset($method['signature']))
+	{
+		$params = [];
+		$name = '';
+		$type = '';
+
+		$signature = $method['signature'];
+		$begin = strrpos($signature, '(');
+		$end = strpos($signature, ')', $begin);
+		$rawParams = explode(',', substr($signature, $begin + 1, $end - $begin));
+
+		foreach ($rawParams as $param)
+		{
+			$param = trim($param);
+			$pos = strrpos($param, ' ');
+			$pos = $pos === false ? 0 : $pos;
+			$params[] = [
+				'type'	=> trim(substr($param, 0, $pos)),
+				'name'	=> trim(substr($param, $pos + 1)),
+			];
+		}
+
+		$end = $begin;
+		$begin = findPos($signature, ' ', $end, -1);
+		$name = trim(substr($signature, $begin, $end - $begin));
+
+		$end = $begin;
+		$begin = findPos($signature, ' ', $end - 1, -1);
+		$type = trim(substr($signature, $begin, $end - $begin));
+
+		$method += compact('type', 'name', 'params');
+	}
 }
 
 

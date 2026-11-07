@@ -24,6 +24,8 @@ const K_PTR = '*';
 
 const T_VOID = 'void';
 
+const WV_COMMENT = '#';
+
 const TYPES = [
 	'bool'		=> 'false',
 	'char'		=> '\0',

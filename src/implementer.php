@@ -8,11 +8,16 @@ include_once 'impl/writer.php';
 function prepareInputFiles(object &$data) : void
 {
 	$files = $data->settings['inputs'];
+	$protoFiles = array_filter($files, fn (array|string $f) : bool => is_string($f));
+	$cppFiles = array_filter($files, fn (array|string $f) : bool => is_array($f));
 
 	$data->input = (object) [];
-	$data->input->api = file_get_contents($files['api']);
 
-	foreach (array_slice($files, 1) as $f => $subfiles)
+	foreach ($protoFiles as $f => $file)
+	{
+		$data->input->$f = file_get_contents($file);
+	}
+	foreach ($cppFiles as $f => $subfiles)
 	{
 		$data->input->$f = (object) [];
 
@@ -39,11 +44,15 @@ function write(object $data) : void
 	$settings = $data->settings;
 	$obj = $data->input->obj;
 	$lib = $data->input->lib;
+	$wv = $data->input->wv;
 
-	writeObjHeader($files['obj']['header'], $params, $settings, $obj->header);
-	writeLibHeader($files['lib']['header'], $params, $settings, $lib->header);
-	writeObjImpl($files['obj']['impl'], $className, $params, $settings, $obj->impl);
-	writeLibImpl($files['lib']['impl'], $className, $params, $settings, $lib->impl);
+	// TODO: Pular métodos já implementados
+	//writeObjHeader($files['obj']['header'], $params, $settings, $obj->header);
+	//writeLibHeader($files['lib']['header'], $params, $settings, $lib->header);
+	//writeObjImpl($files['obj']['impl'], $className, $params, $settings, $obj->impl);
+	//writeLibImpl($files['lib']['impl'], $className, $params, $settings, $lib->impl);
+	writeWvImpl($files['wv'], $params, $settings, $wv);
+	// TODO: Escrever no construtor de classes Weaver
 }
 
 ?>

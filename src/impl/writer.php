@@ -204,6 +204,49 @@ function writeLibImpl(string $filename, string $className, object $params, array
 }
 
 
+function writeWvImpl(string $filename, object $params, array $settings, string $content) : void
+{
+	$eol = $settings['eol'];
+	$wvSignature = $settings['wv']['signature'];
+	$replace = K_OPEN_BRACKET;
+
+	foreach ($params->methods as $access => $categories)
+	{
+		foreach ($categories as $category => $methods)
+		{
+			$replace .= $eol . "\t" . WV_COMMENT . ' ';
+			$replace .= replaceCategoryName($category, $settings['replacements']);
+			$replace .= $eol;
+
+			foreach ($methods as $method)
+			{
+				[
+					'type'		=> $type,
+					'name'		=> $name,
+					'params'	=> $params,
+				] = $method;
+
+				$replace .= "\t";
+				$replace .= sprintf(
+					$wvSignature,
+					$access,
+					$name,
+					stringfyParams($params),
+					replaceTypeName($type)
+				);
+				$replace .= $eol;
+			}
+		}
+	}
+
+	$replace .= K_CLOSE_BRACKET . $eol;
+	$offset = strpos($content, K_OPEN_BRACKET);
+	$content = substr_replace($content, $replace, $offset);
+
+	writeFile($filename, $content);
+}
+
+
 function replaceCategoryName(string $key, array $replacements) : string
 {
 	$k = strtolower($key);
@@ -214,6 +257,45 @@ function replaceCategoryName(string $key, array $replacements) : string
 	}
 
 	return $key;
+}
+
+
+function replaceTypeName(string $type) : string
+{
+	if (str_contains($type, 'char*'))
+	{
+		$pos = strrpos($type, 'char*');
+		$type = substr_replace($type, 'string', $pos);
+	}
+	if (str_contains($type, 'uint8_t'))
+	{
+		$pos = strrpos($type, 'uint8_t');
+		$type = substr_replace($type, 'byte', $pos);
+	}
+
+	return $type;
+}
+
+
+function stringfyParams(array $params) : string
+{
+	$result = '';
+	$count = count($params);
+
+	for ($i = 0; $i < $count; ++$i)
+	{
+		$param = $params[$i];
+		$result .= replaceTypeName($param['type']);
+		$result .= ' ';
+		$result .= $param['name'];
+
+		if ($i < $count - 1)
+		{
+			$result .= ', ';
+		}
+	}
+
+	return trim($result);
 }
 
 

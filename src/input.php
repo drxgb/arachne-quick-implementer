@@ -1,6 +1,7 @@
 <?php
 const EXT_H = '.h';
 const EXT_CPP = '.cpp';
+const EXT_WV = '.wv';
 
 
 function checkClassFiles(string $name, array &$settings) : bool
@@ -19,7 +20,8 @@ function checkClassFiles(string $name, array &$settings) : bool
 	echo "Object Header file:\t\t{$inputs['obj']['header']}" . PHP_EOL;
 	echo "Object Implementation file:\t{$inputs['obj']['impl']}" . PHP_EOL;
 	echo "Lib Header file:\t\t{$inputs['lib']['header']}" . PHP_EOL;
-	echo "Lib Implementation file:\t{$inputs['lib']['impl']}" . PHP_EOL . PHP_EOL;
+	echo "Lib Implementation file:\t{$inputs['lib']['impl']}" . PHP_EOL;
+	echo "Weaver file:\t\t\t{$inputs['wv']}" . PHP_EOL . PHP_EOL;
 
 	while (! in_array($answer, [ 'y', 'n' ]))
 	{
@@ -38,6 +40,7 @@ function makeInputPaths(array &$settings, string $name) : void
 		'api'	=> $api,
 		'obj'	=> $obj,
 		'lib'	=> $lib,
+		'wv'	=> $wv,
 	] = $settings['paths'];
 
 	$base = realpath($base) . DIRECTORY_SEPARATOR;
@@ -51,6 +54,9 @@ function makeInputPaths(array &$settings, string $name) : void
 			'impl' 		=> $base . $group['impl'] . $filename . EXT_CPP,
 		];
 	}
+
+	$package = ! empty($settings['package']) ? "{$settings['package']}/" : '';
+	$settings['inputs']['wv'] = $base . $wv . $package . $name . EXT_WV;
 }
 
 
