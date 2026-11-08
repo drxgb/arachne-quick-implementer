@@ -134,6 +134,7 @@ function writeLibHeader(string $filename, object $params, array $settings, strin
 					$replace .= $eol;
 					$replace .= "\t\t" . K_STATIC . ' ';
 					$replace .= sprintf($settings['lib']['signature'], $name);
+					$replace .= K_EOL;
 				}
 			}
 		}
