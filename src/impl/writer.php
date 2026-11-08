@@ -1,6 +1,8 @@
 <?php
+include_once 'constants.php';
 
-function writeObjHeader(string $filename, object $params, array $settings, string $content) : void
+
+function writeObjHeader(string $filename, object $params, array $settings, string &$content) : void
 {
 	$eol = $settings['eol'];
 
@@ -98,7 +100,7 @@ function writeObjHeader(string $filename, object $params, array $settings, strin
 }
 
 
-function writeLibHeader(string $filename, object $params, array $settings, string $content) : void
+function writeLibHeader(string $filename, object $params, array $settings, string &$content) : void
 {
 	$eol = $settings['eol'];
 	$replace = '';
@@ -146,7 +148,29 @@ function writeLibHeader(string $filename, object $params, array $settings, strin
 }
 
 
-function writeObjImpl(string $filename, string $className, object $params, array $settings, string $content) : void
+function writeBuilderHeader(string $filename, string $className, array $settings, string &$content) : void
+{
+	$eol = $settings['eol'];
+	$end = strrpos($content, '};');
+
+	if ($end !== false)
+	{
+		$signature = sprintf($settings['builder']['proto'], $className);
+
+		if (! str_contains($content, $signature))
+		{
+			$begin = findPos($content, [ K_EOL, ':' ], $end, -1);
+			$replace = $eol . "\t\t";
+			$replace .= $signature;
+
+			$content = substr_replace($content, $replace, $begin + 1, 0);
+			writeFile($filename, $content);
+		}
+	}
+}
+
+
+function writeObjImpl(string $filename, string $className, object $params, array $settings, string &$content) : void
 {
 	$eol = $settings['eol'];
 
@@ -184,7 +208,7 @@ function writeObjImpl(string $filename, string $className, object $params, array
 }
 
 
-function writeLibImpl(string $filename, string $className, object $params, array $settings, string $content) : void
+function writeLibImpl(string $filename, string $className, object $params, array $settings, string &$content) : void
 {
 	$eol = $settings['eol'];
 	$line = makeCommentLine() . $eol;
@@ -238,7 +262,7 @@ function writeLibImpl(string $filename, string $className, object $params, array
 }
 
 
-function writeWvImpl(string $filename, object $params, array $settings, string $content) : void
+function writeWvImpl(string $filename, object $params, array $settings, string &$content) : void
 {
 	$eol = $settings['eol'];
 	$wvSignature = $settings['wv']['signature'];
@@ -281,6 +305,370 @@ function writeWvImpl(string $filename, object $params, array $settings, string $
 }
 
 
+function writeBuilderImpl(string $filename, string $className, array $settings, string &$content, string $wvContent) : void
+{
+	$eol = $settings['eol'];
+	$builderClass = $settings['package'] . 'Builder';
+	$signature = sprintf($settings['builder']['signature'], $builderClass, $className);
+
+	if (! str_contains($content, $signature))
+	{
+		// Adicionar include
+		$replace = '';
+		$begin = strrpos($content, '#include "');
+		$end = strpos($content, $eol, $begin);
+		$include = sprintf($settings['builder']['include'], $className);
+
+		$replace .= $eol;
+		$replace .= $include;
+		$content = substr_replace($content, $replace, $end, 0);
+
+		// Adicionar chamada do método em onBuild()
+		$end = strpos($content, 'return 0;');
+		$begin = findPos($content, ';', $end, -1);
+
+		$replace = $eol;
+		$replace .= sprintf("\tbuild%s();", $className);
+		$content = substr_replace($content, $replace, $begin + 1, 0);
+
+		// Montar a classe
+		$replace = $eol;
+		$replace .= $signature . $eol;
+		$replace .= K_OPEN_BRACKET . $eol;
+
+		$lines = explode($eol, $wvContent);
+
+		foreach ($lines as $line)
+		{
+			$line = trim($line);
+
+			if (empty($line) || in_array($line, [ K_OPEN_BRACKET, K_CLOSE_BRACKET, WV_PREFIX ]))
+			{
+				continue;
+			}
+
+			if (str_starts_with($line, WV_COMMENT))
+			{
+				$commentLine = makeCommentLine(18);
+				$category = K_COMMENT . " \t" . trim(substr($line, 1));
+
+				$replace .= "\t" . $commentLine . $eol;
+				$replace .= "\t" . $category . $eol;
+				$replace .= "\t" . $commentLine . $eol . $eol;
+			}
+			else
+			{
+				$line = str_replace(K_EOL, '', $line);
+				$words = [];
+				$statement = [];
+				$begin = 0;
+				$replace .= "\t" . K_COMMENT . ' ' . $line . $eol;
+
+				while ($begin < strlen($line))
+				{
+					$endChar = ' ';
+
+					for ($end = $begin; $end < strlen($line) && $line[$end] !== $endChar; ++$end)
+					{
+						if ($line[$end] === '(')
+						{
+							$endChar = ')';
+						}
+					}
+
+					$word = trim(substr($line, $begin, $end + 1 - $begin));
+
+					if (! empty($word))
+					{
+						$words[] = $word;
+					}
+
+					$begin = $end + 1;
+				}
+
+				if (str_contains($line, K_CLASS))
+				{
+					while (! empty($words))
+					{
+						$word = array_shift($words);
+
+						switch ($word)
+						{
+							case 'final':
+							case 'abstract':
+							{
+								$statement['rules'][] = '.set' . ucfirst($word) . '()';
+								break;
+							}
+
+							case 'class':
+							{
+								$statement['class'] = findNameConst($settings, array_shift($words));
+								break;
+							}
+
+							case 'extends':
+							{
+								$type = findNameConst($settings, array_shift($words));
+								$statement['inherits'][] = ".extend({$type})";
+								break;
+							}
+						}
+					}
+
+					$replace .= "\t" . "createClass({$statement['class']})" . $eol;
+
+					foreach ($statement['rules'] ?? [] as $rule)
+					{
+						$replace .= "\t\t" . $rule . $eol;
+					}
+					foreach ($statement['inherits'] ?? [] as $inherit)
+					{
+						$replace .= "\t\t" . $inherit . $eol;
+					}
+
+					$replace .= "\t\t.end();" . $eol;
+				}
+				else if (str_contains($line, WV_FUNCTION))
+				{
+					while (! empty($words))
+					{
+						$word = array_shift($words);
+
+						switch ($word)
+						{
+							case 'private':
+							case 'protected':
+							{
+								$word = strtoupper($word);
+								$statement['access'] = ".setAccessModifier({$word})";
+								break;
+							}
+
+							case 'abstract':
+							case 'const':
+							case 'static':
+							case 'final':
+							{
+								$statement['rules'][] = '.set' . ucfirst($word) . '()';
+								break;
+							}
+
+							case 'public':
+							case 'native':
+							case 'function':
+							case ':':
+							{
+								break;
+							}
+
+							default:
+							{
+								if (isset($statement['name']))
+								{
+									$returnType = replaceWeaverType($word);
+
+									if ($returnType === 'void' || in_array($returnType, PRIMITIVE_TYPES))
+									{
+										$returnType = strtoupper($returnType);
+										$statement['method'] = '.buildMethod(';
+										$statement['method'] .= "Weaver::VTYPE_{$returnType}, ";
+										$statement['method'] .= "&{$className}::{$statement['name']}";
+										$statement['method'] .= ')';
+									}
+									else
+									{
+										$statement['return'] = '.returnTypeName(';
+										$statement['return'] .= findNameConst($settings, $returnType);
+										$statement['return'] .= ')';
+										$statement['method'] = '.buildMethod(';
+										$statement['method'] .= 'Weaver::VTYPE_';
+										$statement['method'] .= isEnumType($settings, $returnType) ? 'ENUM_TYPE' : 'INSTANCE';
+										$statement['method'] .= ', ';
+										$statement['method'] .= "&{$className}::{$statement['name']}";
+										$statement['method'] .= ')';
+									}
+								}
+								else
+								{
+									$begin = strpos($word, '(');
+									$name = substr($word, 0, $begin);
+									$rawParams = str_replace([ '(', ')' ], '', substr($word, $begin));
+									$params = empty($rawParams) ? [] : explode(',', trim($rawParams));
+
+									foreach ($params as $param)
+									{
+										$parts = explode(' ', trim($param));
+										$const = false;
+										$type = null;
+										$var = null;
+										$default = null;
+
+										while (! empty($parts))
+										{
+											$part = array_shift($parts);
+
+											if ($part === K_CONST)
+											{
+												$const = true;
+											}
+											else if ($part === '=')
+											{
+												$default = array_shift($parts);
+											}
+											else if (is_null($type))
+											{
+												$type = replaceWeaverType($part);
+											}
+											else
+											{
+												$var = findNameConst($settings, $part);
+											}
+										}
+
+										$paramResult = '.addParam(';
+										$paramResult .= $var . ', ';
+
+										if (isPrimitiveType($type))
+										{
+											$paramResult .= 'Weaver::VTYPE_' . strtoupper($type);
+										}
+										else
+										{
+											$paramResult .= 'Weaver::VTYPE_';
+											$paramResult .= isEnumType($settings, $type) ? 'ENUM_TYPE' : 'INSTANCE';
+											$paramResult .= ', ' . $settings['keywords'][$type];
+										}
+
+										if ($default)
+										{
+											if ($default === 'null')
+											{
+												$paramResult .= ", new Weaver::Null";
+											}
+											else if (preg_match('/\"*.\"/i', $default))
+											{
+												$paramResult .= ", new Weaver::String({$default})";
+											}
+											else if (preg_match('/\'*.\'/i', $default))
+											{
+												$paramResult .= ", new Weaver::Character({$default})";
+											}
+											else if (preg_match('/\d*\.\d+f/i', $default))
+											{
+												$paramResult .= ", new Weaver::Float({$default})";
+											}
+											else if (preg_match('/\d*\.\d+/i', $default))
+											{
+												$paramResult .= ", new Weaver::Double({$default})";
+											}
+											else if (preg_match('/\d+/i', $default))
+											{
+												$paramResult .= ", new Weaver::{$type}({$default})";
+											}
+											else
+											{
+												$paramResult .= ", new Weaver::Instance";
+											}
+										}
+										if ($const)
+										{
+											$paramResult .= ', true';
+										}
+
+										$paramResult .= ')';
+										$statement['params'][] = $paramResult;
+									}
+
+									$statement['name'] = $name;
+									$statement['begin'] = '.begin(';
+									$statement['begin'] .= findNameConst($settings, $name);
+									$statement['begin'] .= ')';
+								}
+							}
+						}
+					}
+
+					$replace .= "\tmemberBuilder()" . $eol;
+					$replace .= "\t\t{$statement['begin']}" . $eol;
+
+					foreach ($statement['rules'] ?? [] as $rule)
+					{
+						$replace .= "\t\t" . $rule . $eol;
+					}
+					foreach ($statement['params'] ?? [] as $param)
+					{
+						$replace .= "\t\t" . $param . $eol;
+					}
+					if (isset($statement['return']))
+					{
+						$replace .= "\t\t{$statement['return']}" . $eol;
+					}
+
+					$replace .= "\t\t{$statement['method']}" . $eol;
+					$replace .= "\t\t.end();" . $eol;
+				}
+
+				$replace .= $eol;
+			}
+		}
+
+		$replace .= K_CLOSE_BRACKET . $eol;
+
+		$content .= $replace . $eol;
+		writeFile($filename, $content);
+	}
+}
+
+
+function findNameConst(array $settings, string $name) : string
+{
+	if (isset($settings['keywords']))
+	{
+		$keywords = $settings['keywords'];
+
+		if (isset($keywords[$name]))
+		{
+			return $keywords[$name];
+		}
+	}
+
+	return "\"{$name}\"";
+}
+
+
+function isPrimitiveType(string $type) : bool
+{
+	return $type === 'void' || in_array($type, PRIMITIVE_TYPES);
+}
+
+
+function isEnumType(array $settings, string $type) : bool
+{
+	if (isset($settings['keywords']))
+	{
+		if (! empty($type) && in_array($type, $settings['keywords']));
+		{
+			$key = $settings['keywords'][$type];
+			return str_starts_with($key, 'E_');
+		}
+	}
+
+	return false;
+}
+
+
+function replaceWeaverType(string $type) : string
+{
+	if (isset(PRIMITIVE_TYPES[$type]))
+	{
+		return PRIMITIVE_TYPES[$type];
+	}
+
+	return $type;
+}
+
+
 function replaceCategoryName(string $key, array $replacements) : string
 {
 	$k = strtolower($key);
@@ -307,7 +695,7 @@ function replaceTypeName(string $type) : string
 		$type = substr_replace($type, 'byte', $pos);
 	}
 
-	return $type;
+	return str_replace(K_PTR, '', $type);
 }
 
 

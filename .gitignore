@@ -3,3 +3,4 @@ test/*
 release/*
 
 settings.json
+settings.json.test

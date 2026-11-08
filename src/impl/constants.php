@@ -24,7 +24,9 @@ const K_PTR = '*';
 
 const T_VOID = 'void';
 
+const WV_PREFIX = '@';
 const WV_COMMENT = '#';
+const WV_FUNCTION = 'function';
 
 const TYPES = [
 	'bool'		=> 'false',
@@ -34,5 +36,16 @@ const TYPES = [
 	'int'		=> '0',
 	'long'		=> '0',
 	'short'		=> '0',
+];
+
+const PRIMITIVE_TYPES = [
+	'bool'			=> 'Boolean',
+	'byte'			=> 'Byte',
+	'char'			=> 'Character',
+	'double'		=> 'Double',
+	'float'			=> 'Float',
+	'int'			=> 'Integer',
+	'short'			=> 'Short',
+	'string'		=> 'String',
 ];
 ?>

@@ -12,7 +12,7 @@ $checked = false;
 $classLoaded = isset($argv[1]);
 
 // Ler configurações iniciais
-loadSettings(__DIR__, $settings);
+loadSettings(__DIR__, $settings, $argc > 2 && $argv[2] === '--test');
 
 // Carregar argumentos
 $pos = strrpos($argv[1], '/');

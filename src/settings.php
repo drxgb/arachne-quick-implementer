@@ -1,15 +1,18 @@
 <?php
 // Constantes
 const SETTINGS_FILE = "settings.json";
+const SETTINGS_TEST = "settings.json.test";
 
 
 // ===========================================================
 // 		Protótipos
 // ===========================================================
 
-function loadSettings(string $path, array &$settings) : void
+function loadSettings(string $path, array &$settings, bool $test = false) : void
 {
-	$file = file_get_contents($path . DIRECTORY_SEPARATOR . SETTINGS_FILE);
+	$filename = $path . DIRECTORY_SEPARATOR;
+	$filename .= $test ? SETTINGS_TEST : SETTINGS_FILE;
+	$file = file_get_contents($filename);
 	$settings = json_decode($file, true);
 
 	if (isset($settings['eol']))

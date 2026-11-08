@@ -152,7 +152,7 @@ function makeMethodStructure(array &$method) : void
 		$signature = $method['signature'];
 		$begin = strrpos($signature, '(');
 		$end = strpos($signature, ')', $begin);
-		$rawParams = explode(',', substr($signature, $begin + 1, $end - $begin));
+		$rawParams = explode(',', str_replace([ '(', ')' ], '', substr($signature, $begin, $end - $begin)));
 
 		foreach ($rawParams as $param)
 		{
