@@ -350,7 +350,7 @@ function writeBuilderImpl(string $filename, string $className, array $settings, 
 			if (str_starts_with($line, WV_COMMENT))
 			{
 				$commentLine = makeCommentLine(18);
-				$category = K_COMMENT . " \t" . trim(substr($line, 1));
+				$category = K_COMMENT . " \t\t" . trim(substr($line, 1));
 
 				$replace .= "\t" . $commentLine . $eol;
 				$replace .= "\t" . $category . $eol;
@@ -616,7 +616,7 @@ function writeBuilderImpl(string $filename, string $className, array $settings, 
 		$replace .= "\tprototypeBuilder().end();" . $eol;
 		$replace .= K_CLOSE_BRACKET . $eol;
 
-		$content .= $replace . $eol;
+		$content .= $replace;
 		writeFile($filename, $content);
 	}
 }
