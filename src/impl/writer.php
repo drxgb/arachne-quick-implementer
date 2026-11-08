@@ -613,6 +613,7 @@ function writeBuilderImpl(string $filename, string $className, array $settings, 
 			}
 		}
 
+		$replace .= "\tprototypeBuilder().end();" . $eol;
 		$replace .= K_CLOSE_BRACKET . $eol;
 
 		$content .= $replace . $eol;

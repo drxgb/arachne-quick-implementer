@@ -84,10 +84,10 @@ function write(object $data) : void
 	$wv = $data->input->wv;
 	$builder = $data->input->builder;
 
-	//writeObjHeader($files['obj']['header'], $params, $settings, $obj->header);
-	//writeLibHeader($files['lib']['header'], $params, $settings, $lib->header);
-	//writeObjImpl($files['obj']['impl'], $className, $params, $settings, $obj->impl);
-	//writeLibImpl($files['lib']['impl'], $className, $params, $settings, $lib->impl);
+	writeObjHeader($files['obj']['header'], $params, $settings, $obj->header);
+	writeLibHeader($files['lib']['header'], $params, $settings, $lib->header);
+	writeObjImpl($files['obj']['impl'], $className, $params, $settings, $obj->impl);
+	writeLibImpl($files['lib']['impl'], $className, $params, $settings, $lib->impl);
 	writeWvImpl($files['wv'], $params, $settings, $wv);
 	writeBuilderHeader($files['builder']['header'], $className, $settings, $builder->header);
 	writeBuilderImpl($files['builder']['impl'], $className, $settings, $builder->impl, $wv);
